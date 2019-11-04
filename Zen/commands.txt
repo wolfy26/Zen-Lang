@@ -1,0 +1,32 @@
+00 -> push_const   [const_index]                               -> add constant to stack
+01 -> push_name    [scope_index] [name_index]                  -> add value of variable to stack
+02 -> def_name     [scope_index] [name_index]                  -> define variable with value on stack, add value to stack
+03 -> set_name     [scope_index] [name_index]                  -> set variable to value on stack
+04 -> add                                                      -> add two values on stack
+05 -> sub                                                      -> (second-to-top value on stack) minus (top value on stack)
+06 -> mult                                                     -> multiply two values on stack
+07 -> div_norm                                                 -> (second-to-top value on stack) divided by (top value on stack)
+08 -> div_floor                                                -> (second-to-top value on stack) integer divide (top value on stack)
+09 -> pow                                                      -> raise second-to-top value on stack to top value on stack
+0a -> mod                                                      -> (second-to-top value on stack) mod (top value on stack)
+0b -> make_name    [scope_index] [name_index]                  -> create variable with no value
+0c -> call_func    [scope_index] [func_index] [num_args]       -> call function, pop arguments off stack
+0d -> print        [num_args]                                  -> special print function, pop arguments off stack
+0e -> println      [num_args]                                  -> same as print, except prints with new line
+0f -> return                                                   -> return top value on stack
+10 -> if_false     [index]                                     -> if top value on stack is false, go to index
+11 -> if_true      [index]                                     -> if top value on stack is true, go to index
+12 -> goto         [index]                                     -> go to index
+13 -> less                                                     -> second-to-top value on stack less than top value on stack
+14 -> less_eq                                                  -> second-to-top value on stack less than or equals top value on stack
+15 -> greater                                                  -> second-to-top value on stack greater than top value on stack
+16 -> greater_eq                                               -> second-to-top value on stack greater than or equals top value on stack
+17 -> equals                                                   -> second-to-top value on stack equals top value on stack
+18 -> not_eq                                                   -> second-to-top value on stack not equals top value on stack
+19 -> add_name     [scope_index] [name_index]                  -> add top value of stack to variable
+1a -> sub_name     [scope_index] [name_index]                  -> subtract top value of stack from variable
+1b -> mult_name    [scope_index] [name_index]                  -> multiply top value of stack with variable
+1c -> divn_name    [scope_index] [name_index]                  -> divide top value of stack into variable
+1d -> divf_name    [scope_index] [name_index]                  -> floor divide top value of stack into variable
+1e -> pow_name     [scope_index] [name_index]                  -> raise variable to top value of stack
+1f -> mod_name     [scope_index] [name_index]                  -> (variable) % (top value on stack)
