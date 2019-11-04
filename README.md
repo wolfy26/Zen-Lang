@@ -2,10 +2,10 @@
 
 ## Version
 
-Zen is currently on Version 0.0
+Zen is currently on Version 0.1
 
 ## Installation
-The following scripts are required to run Zen:
+Download the following files from `Zen` to run Zen:
 
 File Name|Purpose
 -|-
