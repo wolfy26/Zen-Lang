@@ -5,7 +5,7 @@
 Zen is currently on Version 0.2
 
 ## Installation
-To run Zen, download `zen.exe`. Save it in the same directory as an Zen programs.
+To run Zen, download `zen.exe`.
 
 ## Execution
 

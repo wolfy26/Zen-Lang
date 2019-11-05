@@ -32,12 +32,14 @@ def _eval(scope):
             evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '02':
             temp_scope = scope
+            new_value = evaluation_stack.pop()
             if arguments[1]:
                 for scope_count in range(evaluation_stack.pop()):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
-            temp_scope["values"][arguments[0]] = evaluation_stack[-1]
+            temp_scope["values"][arguments[0]] = new_value
+            evaluation_stack.append(new_value)
         elif command == '03':
             temp_scope = scope
             new_value = evaluation_stack.pop()
