@@ -42,19 +42,16 @@ def _check_prefix(token):
             prefixes.append(delimiter)
     return prefixes
 
-def _number(token):
+def _is_number(token):
     try:
-        return int(token)
+        float(token)
     except ValueError:
-        try:
-            return float(token)
-        except ValueError:
-            return None
+        return None
 
-def _variable(token):
+def _is_variable(token):
     return re.match('^[a-zA-Z_]\\w*$', token)
 
-def _string(token):
+def _is_string(token):
     return token[0] == token[-1] and (token[0] == "'" or token[0] == '"')
 
 def _get_tokens():
@@ -132,6 +129,12 @@ def _get_tokens():
     if temporary_delimiter:
         tokens.append(temporary_delimiter)
     return tokens
+'''
+Data Types
+'''
+def _number(value = 0):
+    return {"type": -1, 'value': value}
+_type_lookup = {}
 '''
 Compiler
 '''
@@ -287,15 +290,15 @@ def _eval(scope):
         operators = []
         while _peek() not in _ending:
             token = _next()
-            if _number(token) is not None:
-                token_value = _number(token)
+            if _is_number(token) is not None:
+                token_value = _is_number(token)
                 _add_const(token_value)
                 scope["code"].append('00{:02x}'.format(_const_lookup[token_value]))
-            elif _string(token):
+            elif _is_string(token):
                 token = token[1:-1]
                 _add_const(token)
                 scope["code"].append('00{:02x}'.format(_const_lookup[token]))
-            elif _variable(token):
+            elif _is_variable(token):
                 scope_defined = _peek() == '{'
                 if scope_defined:
                     _next()
