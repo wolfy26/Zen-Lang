@@ -131,7 +131,7 @@ until(x = 20){
 }
 ```
 #### Standard Output
-Two built-in functions, `print` and `println`, are provided. Both accept any number of arguments, and write every argument, separated with a space, to standard output. `println` always ends with a new line.
+Two built-in functions, `print` and `println`, are provided. Both accept any number of arguments and write every argument, separated with a space, to standard output. `println` always ends with a new line.
 
 ## Scoping
 
