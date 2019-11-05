@@ -70,7 +70,7 @@ def _eval(scope):
                 arg_name = _next()
                 _add_var(arg_name)
                 func_scope["values"][int(_get_var(arg_name))] = None
-                if _peek == ',':
+                if _peek() == ',':
                     _next()
             _next(2)
             while _peek() != '}':

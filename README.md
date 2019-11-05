@@ -5,27 +5,32 @@
 Zen is currently on Version 0.2
 
 ## Installation
-Download the following files from `Zen` to run Zen:
 
-File Name|Purpose
--|-
-`run.py`|Runs Zen script
-`lexer.py`|Tokenizer
-`compiler.py`|Compiler
-`interpreter.py`|Bytecode executer
-`decompiler.py`|Debugging
-
-All five files, along with any Zen programs, should be stored in the same directory.
+To run Zen, download `zen.exe`.
 
 ## Execution
 
-To execute Zen on Windows 10, use the command prompt and run the python script `run.py` with an argument of the program name:
+To execute Zen on Windows 10, download Zen-Lang and add it to the PATH. Use the command prompt to run a Zen file:
+```
+> zen [filename].zl
+```
+
+Optionally, download only `zen.exe`, save it in the same directory as any Zen files, and execute it:
 
 ```
-> python run.py [filename]
+> zen.exe [filename].zl
 ```
 
 The file extension `.zl` is optional.
+
+The following flags are available for debugging:
+
+Flag|Mode
+-|-
+`-r`|Display source code of Zen file
+`-b`|Display global bytecode of Zen file
+`-f`|Display function bytecode of Zen file
+`-g`|Display gotos of global bytecode
 
 ## Syntax
 
@@ -126,7 +131,7 @@ until(x = 20){
 }
 ```
 #### Standard Output
-Two built-in functions, `print` and `println`, are provided. Both accept any number of arguments, and write every argument, separated with a space, to standard output. `println` always ends with a new line.
+Two built-in functions, `print` and `println`, are provided. Both accept any number of arguments and write every argument, separated with a space, to standard output. `println` always ends with a new line.
 
 ## Scoping
 
