@@ -3,6 +3,9 @@ import re
 '''
 Tokenizer
 '''
+_flags = {'-r':0,'-b':0,'-f':0,'-g':0}
+_active_flags = set()
+_raw_input = ''
 _delimiters = {'!', '%', '^', '&', '*', '(', ')', '-', '+', ':=', '{', '}', '[', ']', '|', ';', ':', '<', '>', ',', '.', '?', '/',
                '&&', '||', '!=', '^=', '&=', '*:', '-:', '+:', '=', '|=', '<=', '>=', '/:', '//:' '++', '--', '**', '//'}
 _ending = {')', '}', ']', ';', ','}
@@ -11,14 +14,22 @@ _operators = {'%':1,'^':4,'&':3,'*':1,'-':2,'+':2,'|':5,'<':6,'>':6,'/':1,'&&':7
                        ':=':7,'+:':7,'-:':7,'*:':7,'/:':7,'//:':7,'**:':7,'%:':7}
 _self_operators = {':=', '+:', '-:', '*:', '/:', '//:', '**:', '%:'}
 def _get_filename():
+    filename = None
     if len(argv) > 1:
-        return argv[1]
+        arg = 1
+        while arg < len(argv):
+            if argv[arg] in _flags:
+                arg += _flags[argv[arg]]
+                _active_flags.add(argv[arg])
+            elif not filename:
+                filename = argv[arg]
+            arg += 1
+        return filename
     else:
         raise FileNotFoundError('File not specified')
 
 def _read_file():
     filename = _get_filename()
-    #infer .zl extension
     if filename[-3:] != '.zl':
         filename += '.zl'
     with open(filename, 'r') as f:
@@ -47,13 +58,14 @@ def _string(token):
     return token[0] == token[-1] and (token[0] == "'" or token[0] == '"')
 
 def _get_tokens():
-    raw_input = _read_file()
+    global _raw_input
+    _raw_input = _read_file()
     tokens = []
     current_token = ''
     temporary_delimiter = ''
     flag_string = 0
     flag_escape = False
-    for character in raw_input:
+    for character in _raw_input:
         if character == '\\' and not flag_escape:
             flag_escape = True
             continue
@@ -191,7 +203,7 @@ def _eval(scope):
                 arg_name = _next()
                 _add_var(arg_name)
                 func_scope["values"][int(_get_var(arg_name))] = None
-                if _peek == ',':
+                if _peek() == ',':
                     _next()
             _next(2)
             while _peek() != '}':
@@ -227,8 +239,13 @@ def _eval(scope):
         scope["goto"][jump_else] = len(scope["code"])
         if _peek(2) == 'else':
             _next(2)
-            _eval(if_scope)
-            _next()
+            if _peek() == 'if':
+                _eval(scope)
+            else:
+                _next()
+                while _peek() != '}':
+                    _eval(if_scope)
+                    _next()
         scope["code"][end_if] = '12{:02x}'.format(len(scope["goto"]))
         scope["goto"].append(len(scope["code"]))
     elif token == 'while':
@@ -337,7 +354,6 @@ def _compile():
 '''
 Bytecode executer
 '''
-_consts = []
 def _exec(scope):
     bytecode = scope["code"]
     evaluation_stack = []
@@ -638,19 +654,19 @@ _commands = {
 }
 def _get_byte(bytecode, byte_index):
     return bytecode[byte_index:byte_index+2]
-def _format(bytecode):
+def _format(scope):
     byte_index = 0
     instruction = 0
-    while byte_index < len(bytecode):
-        command_termination = _get_byte(bytecode, byte_index)
-        print(str(instruction).rjust(3), end = '\t\t')
+    while byte_index < len(scope["code"]):
+        command_termination = _get_byte(scope["code"], byte_index)
+        print(str(instruction).rjust(3), end = '\t' + ('    >>\t' if byte_index // 2 in scope["goto"] else '\t'))
         print(command_termination, end = '\t')
         byte_index += 2
-        print(_commands[_get_byte(bytecode, byte_index)].ljust(15), end = '')
+        print(_commands[_get_byte(scope["code"], byte_index)].ljust(15), end = '')
         command_termination = int(command_termination, 16) * 2
         byte_index += 2
         while byte_index < command_termination:
-            print(_get_byte(bytecode, byte_index), end = '\t')
+            print(_get_byte(scope["code"], byte_index), end = '\t')
             byte_index += 2
         print()
         instruction += 1
@@ -661,6 +677,21 @@ def main():
     global _tokens
     _tokens = _get_tokens()
     scope = _compile()
+    if '-r' in _active_flags:
+        print(_raw_input)
+    if '-b' in _active_flags:
+        print('GLOBAL')
+        _format(scope)
+        print()
+    if '-f' in _active_flags:
+        for count, function in enumerate(_func_data):
+            print('FUNCTION {}'.format(count))
+            _format(function)
+        print()
+    if '-g' in _active_flags:
+        print('GLOBAL GOTOS')
+        print(*['{:02x}'.format(i) for i in scope["goto"]])
+        print()
     _exec(scope)
 if __name__ == '__main__':
     main()

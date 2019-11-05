@@ -5,17 +5,32 @@
 Zen is currently on Version 0.2
 
 ## Installation
+
 To run Zen, download `zen.exe`.
 
 ## Execution
 
-To execute Zen on Windows 10, use the command prompt and run `zen.exe` with an argument of the program name:
+To execute Zen on Windows 10, download Zen-Lang and add it to the PATH. Use the command prompt to run a Zen file:
+```
+> zen [filename].zl
+```
+
+Optionally, download only `zen.exe`, save it in the same directory as any Zen files, and execute it:
 
 ```
 > zen.exe [filename].zl
 ```
 
 The file extension `.zl` is optional.
+
+The following flags are available for debugging:
+
+Flag|Mode
+-|-
+`-r`|Display source code of Zen file
+`-b`|Display global bytecode of Zen file
+`-f`|Display function bytecode of Zen file
+`-g`|Display gotos of global bytecode
 
 ## Syntax
 
