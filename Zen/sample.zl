@@ -1,16 +1,10 @@
-def n(){
-  println('ran n as function');
-}
-if(1 = 1){
-  def n(){
-    println('ran n as function in conditional');
+def fib(n){
+  def p1{1} := def p2{10} := 1;
+  until(n <= 2){
+    p1 +: p2;
+    p2 := p1-p2;
+    n -: 1;
   }
-  def n := 2;
-  println(n);
-  def n{1} := 1;
-  println(n{1});
-  n{100} := 3;
-  n();
-  n{1}();
+  return p1;
 }
-println(n);
+println(fib(120));

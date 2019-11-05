@@ -5,21 +5,11 @@
 Zen is currently on Version 0.2
 
 ## Installation
-Download the following files from `Zen` to run Zen:
-
-File Name|Purpose
--|-
-`run.py`|Runs Zen script
-`lexer.py`|Tokenizer
-`compiler.py`|Compiler
-`interpreter.py`|Bytecode executer
-`decompiler.py`|Debugging
-
-All five files, along with any Zen programs, should be stored in the same directory.
+To run Zen, download `zen.py`. Save it in the same directory as an Zen programs.
 
 ## Execution
 
-To execute Zen on Windows 10, use the command prompt and run the python script `run.py` with an argument of the program name:
+To execute Zen on Windows 10, use the command prompt and run the python script `zen.py` with an argument of the program name:
 
 ```
 > python run.py [filename]
