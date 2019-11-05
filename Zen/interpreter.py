@@ -2,8 +2,10 @@
 '''
 from decompiler import get_byte
 from compiler import copy_scope
+from compiler import _func_data
 _consts = []
-def _eval(bytecode, scope):
+def _eval(scope):
+    bytecode = scope["code"]
     evaluation_stack = []
     byte_index = 0
     while byte_index < len(bytecode):
@@ -18,21 +20,38 @@ def _eval(bytecode, scope):
             evaluation_stack.append(_consts[arguments[0]])
         elif command == '01':
             temp_scope = scope
-            for scope_count in range(arguments[0]):
-                temp_scope = temp_scope["parent_scope"]
-            evaluation_stack.append(temp_scope["values"][arguments[1]])
-        elif command == '02':
-            temp_scope = scope
-            for scope_count in range(arguments[0]):
-                temp_scope = temp_scope["parent_scope"]
-            temp_scope["values"][arguments[1]] = evaluation_stack[-1]
-        elif command == '03':
-            temp_scope = scope
-            for scope_count in range(arguments[0]):
-                temp_scope = temp_scope["parent_scope"]
+            if arguments[1]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            while temp_scope["parent"] and arguments[0] not in temp_scope["values"]:
+                temp_scope = temp_scope["parent"]
             if arguments[0] not in temp_scope["values"]:
                 raise NameError
-            temp_scope["values"][arguments[1]] = evaluation_stack[-1]
+            evaluation_stack.append(temp_scope["values"][arguments[0]])
+        elif command == '02':
+            temp_scope = scope
+            if arguments[1]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            temp_scope["values"][arguments[0]] = evaluation_stack[-1]
+        elif command == '03':
+            temp_scope = scope
+            new_value = evaluation_stack.pop()
+            if arguments[1]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            while temp_scope["parent"] and arguments[0] not in temp_scope["values"]:
+                temp_scope = temp_scope["parent"]
+            if arguments[0] not in temp_scope["values"]:
+                raise NameError
+            temp_scope["values"][arguments[0]] = new_value
+            evaluation_stack.append(new_value)
         elif command == '04':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
@@ -63,19 +82,29 @@ def _eval(bytecode, scope):
             evaluation_stack.append(a % b)
         elif command == '0b':
             temp_scope = scope
-            for scope_count in range(arguments[0]):
-                temp_scope = temp_scope["parent_scope"]
-            temp_scope["values"][arguments[1]] = None
+            if arguments[1]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            temp_scope["values"][arguments[0]] = None
         elif command == '0c':
+            num_args = arguments[1]
+            arg_values = [evaluation_stack.pop() for arg_count in range(arguments[1])]
             temp_scope = scope
-            for scope_count in range(arguments[0]):
-                temp_scope = temp_scope["parent_scope"]
-            function = temp_scope["func_data"][temp_scope["funcs"][arguments[1]]]
-            function_scope = copy_scope(function[1])
-            num_args = arguments[2]
-            for argument_count in range(num_args-1, -1, -1):
-                function_scope["values"][argument_count] = evaluation_stack.pop()
-            evaluation_stack.append(_eval(function[0], function_scope))
+            if arguments[2]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            while temp_scope["parent"] and arguments[0] not in temp_scope["func"]:
+                temp_scope = temp_scope["parent"]
+            function = copy_scope(temp_scope["func"][arguments[0]])
+            arg_count = -1
+            for arg in function["values"]:
+                function["values"][arg] = arg_values[arg_count]
+                arg_count -= 1
+            evaluation_stack.append(_eval(function))
         elif command == '0d':
             print_arguments = []
             for argument_count in range(arguments[0]):
@@ -103,6 +132,7 @@ def _eval(bytecode, scope):
                 byte_index = scope["goto"][arguments[0]] * 2
         elif command == '12':
             byte_index = scope["goto"][arguments[0]] * 2
+            scope = scope["parent"]
         elif command == '13':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
@@ -129,47 +159,108 @@ def _eval(bytecode, scope):
             evaluation_stack.append(a != b)
         elif command == '19':
             temp_scope = scope
-            for scope_count in range(arguments[0]):
-                temp_scope = temp_scope["parent_scope"]
-            temp_scope["values"][arguments[1]] += evaluation_stack.pop()
-            evaluation_stack.append(temp_scope["values"][arguments[1]])
+            if arguments[1]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            while temp_scope["parent"] and arguments[0] not in temp_scope["values"]:
+                temp_scope = temp_scope["parent"]
+            if arguments[0] not in temp_scope["values"]:
+                raise NameError
+            temp_scope["values"][arguments[0]] += evaluation_stack.pop()
+            evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '1a':
             temp_scope = scope
-            for scope_count in range(arguments[0]):
-                temp_scope = temp_scope["parent_scope"]
-            temp_scope["values"][arguments[1]] -= evaluation_stack.pop()
-            evaluation_stack.append(temp_scope["values"][arguments[1]])
+            if arguments[1]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            while temp_scope["parent"] and arguments[0] not in temp_scope["values"]:
+                temp_scope = temp_scope["parent"]
+            if arguments[0] not in temp_scope["values"]:
+                raise NameError
+            temp_scope["values"][arguments[0]] -= evaluation_stack.pop()
+            evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '1b':
             temp_scope = scope
-            for scope_count in range(arguments[0]):
-                temp_scope = temp_scope["parent_scope"]
-            temp_scope["values"][arguments[1]] *= evaluation_stack.pop()
-            evaluation_stack.append(temp_scope["values"][arguments[1]])
+            if arguments[1]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            while temp_scope["parent"] and arguments[0] not in temp_scope["values"]:
+                temp_scope = temp_scope["parent"]
+            if arguments[0] not in temp_scope["values"]:
+                raise NameError
+            temp_scope["values"][arguments[0]] *= evaluation_stack.pop()
+            evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '1c':
             temp_scope = scope
-            for scope_count in range(arguments[0]):
-                temp_scope = temp_scope["parent_scope"]
-            temp_scope["values"][arguments[1]] /= evaluation_stack.pop()
-            evaluation_stack.append(temp_scope["values"][arguments[1]])
+            if arguments[1]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            while temp_scope["parent"] and arguments[0] not in temp_scope["values"]:
+                temp_scope = temp_scope["parent"]
+            if arguments[0] not in temp_scope["values"]:
+                raise NameError
+            temp_scope["values"][arguments[0]] /= evaluation_stack.pop()
+            evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '1d':
             temp_scope = scope
-            for scope_count in range(arguments[0]):
-                temp_scope = temp_scope["parent_scope"]
-            temp_scope["values"][arguments[1]] = int(temp_scope["values"][arguments[0]]/evaluation_stack.pop())
-            evaluation_stack.append(temp_scope["values"][arguments[1]])
+            if arguments[1]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            while temp_scope["parent"] and arguments[0] not in temp_scope["values"]:
+                temp_scope = temp_scope["parent"]
+            if arguments[0] not in temp_scope["values"]:
+                raise NameError
+            temp_scope["values"][arguments[0]] //= evaluation_stack.pop()
+            evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '1e':
             temp_scope = scope
-            for scope_count in range(arguments[0]):
-                temp_scope = temp_scope["parent_scope"]
-            temp_scope["values"][arguments[1]] **= evaluation_stack.pop()
-            evaluation_stack.append(temp_scope["values"][arguments[1]])
+            if arguments[1]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            while temp_scope["parent"] and arguments[0] not in temp_scope["values"]:
+                temp_scope = temp_scope["parent"]
+            if arguments[0] not in temp_scope["values"]:
+                raise NameError
+            temp_scope["values"][arguments[0]] **= evaluation_stack.pop()
+            evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '1f':
             temp_scope = scope
-            for scope_count in range(arguments[0]):
-                temp_scope = temp_scope["parent_scope"]
-            temp_scope["values"][arguments[1]] %= evaluation_stack.pop()
-            evaluation_stack.append(temp_scope["values"][arguments[1]])
-def execute(bytecode, scope, consts):
+            if arguments[1]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            while temp_scope["parent"] and arguments[0] not in temp_scope["values"]:
+                temp_scope = temp_scope["parent"]
+            if arguments[0] not in temp_scope["values"]:
+                raise NameError
+            temp_scope["values"][arguments[0]] //= evaluation_stack.pop()
+            evaluation_stack.append(temp_scope["values"][arguments[0]])
+        elif command == '20':
+            scope = scope["scopes"][arguments[0]]
+        elif command == '21':
+            scope = scope["parent"]
+        elif command == '22':
+            temp_scope = scope
+            if arguments[2]:
+                for scope_count in range(evaluation_stack.pop()):
+                    if not temp_scope["parent"]:
+                        break
+                    temp_scope = temp_scope["parent"]
+            temp_scope["func"][arguments[0]] = _func_data[arguments[1]]
+def execute(scope, consts):
     global _consts
     _consts = consts
-    _eval(bytecode, scope)
+    _eval(scope)
