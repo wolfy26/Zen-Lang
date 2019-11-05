@@ -1,0 +1,5 @@
+DEBUG FLAGS:
+  -r    -> display source code
+  -b    -> display bytecode of global scope
+  -f    -> display bytecode of function (requires -b)
+  -g    -> display gotos of global scope

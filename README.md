@@ -2,30 +2,35 @@
 
 ## Version
 
-Zen is currently on Version 0.1
+Zen is currently on Version 0.2
 
 ## Installation
-Download the following files from `Zen` to run Zen:
 
-File Name|Purpose
--|-
-`run.py`|Runs Zen script
-`lexer.py`|Tokenizer
-`compiler.py`|Compiler
-`interpreter.py`|Bytecode executer
-`decompiler.py`|Debugging
-
-All five files, along with any Zen programs, should be stored in the same directory.
+To run Zen, download `zen.exe`.
 
 ## Execution
 
-To execute Zen on Windows 10, use the command prompt and run the python script `run.py` with an argument of the program name:
+To execute Zen on Windows 10, download Zen-Lang and add it to the PATH. Use the command prompt to run a Zen file:
+```
+> zen [filename].zl
+```
+
+Optionally, download only `zen.exe`, save it in the same directory as any Zen files, and execute it:
 
 ```
-> python run.py [filename]
+> zen.exe [filename].zl
 ```
 
 The file extension `.zl` is optional.
+
+The following flags are available for debugging:
+
+Flag|Mode
+-|-
+`-r`|Display source code of Zen file
+`-b`|Display global bytecode of Zen file
+`-f`|Display function bytecode of Zen file
+`-g`|Display gotos of global bytecode
 
 ## Syntax
 
@@ -52,24 +57,24 @@ The mathematical operators supported are:
 
 Operator|Symbol
 -|:-:
-Addition|+
-Subtraction|-
-Multiplication|*
-Division|/
-Exponentiation|**
-Floor division|//
-Modulo|%
+Addition|`+`
+Subtraction|`-`
+Multiplication|`*`
+Division|`/`
+Exponentiation|`**`
+Floor division|`//`
+Modulo|`%`
 
 The logical operators (which return either `True` or `False`) supported are:
 
 |Operator|Symbol|
 -|:-:
-Equality|=
-Inequality|!=
-Less than|<
-Greater than|>
-Less than or equal to|<=
-Greater than or equal to|>=
+Equality|`=`
+Inequality|`!=`
+Less than|`<`
+Greater than|`>`
+Less than or equal to|`<=`
+Greater than or equal to|`>=`
 
 The operators `+:`, `-:`, `*:`, etc. are used as such:
 ```
@@ -79,7 +84,7 @@ x := x + 1;
 The two statements above are identical, and both statements return `x+1`.
 
 #### Functions
-To define a function, use a pair of parentheses capturing the arguments, followed by a code block in curly braces. A function may include one or several return statements, to which the function is evaluated when called. If no return statement is provided, the function evaluates to None:
+To define a function, use a pair of parentheses capturing the arguments, followed by a code block in curly braces. A function may include one or several return statements, to which the function is evaluated when called. If no return statement is provided, the function evaluates to `0`:
 ```
 def hello(){
   println("Hello world!");
@@ -90,7 +95,7 @@ def sum(n1, n2, n3){
 ```
 To call a function, use the function name followed by a series of expressions separated by commas in parentheses.
 
-Functions can access variables in the global scope; however, variables declared in functions may not be accessed from outside the function. If the function and global scope contain variables of the same name, the function variable will always be used, and the global variable will remain untouched:
+Functions can access variables in the global scope; however, variables declared in functions may not be accessed from outside the function. If the function and global scope contain variables of the same name, the function variable will be used, and the global variable will remain untouched (see **Scoping**):
 
 ```
 def x := 0;
@@ -126,4 +131,34 @@ until(x = 20){
 }
 ```
 #### Standard Output
-Two built-in functions, `print` and `println`, are provided. Both accept any number of arguments, and write every argument, separated with a space, to standard output. `println` always ends with a new line.
+Two built-in functions, `print` and `println`, are provided. Both accept any number of arguments and write every argument, separated with a space, to standard output. `println` always ends with a new line.
+
+## Scoping
+
+The ability to control scoping is a powerful tool unique to Zen.
+
+Statements outside any functions, conditionals, or loops are in the **global** scope. Any statements inside the code blocks of functions, conditionals, or loops are one scope within the function, conditional, or loop.
+
+By default, variables and functions are limited to the scope in which they were defined.
+
+Variables are fetched from the first scope outside (or in) the scope specified which has that variable defined.
+
+To specify the scope of a variable or function, use curly braces surrounding an expression immediately following the variable or function name. The expression specifies the number of scopes outside the current scope in which the variable is used. A scope may not exceed the global scope.
+
+Consider the following program:
+```
+def n := 1;
+if(1 = 1){
+  def n := 2;
+  println(n);
+  println(n{1});
+  n{1000} := 3;
+}
+println(n);
+```
+```
+2
+1
+3
+```
+The expression `n{1}` gets the variable `n` one scope outside the conditional. Also, `n{1000}` would far exceed the global scope, but is limited to the global scope without any errors.
