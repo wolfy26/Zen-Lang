@@ -5,14 +5,14 @@
 Zen is currently on Version 0.2
 
 ## Installation
-To run Zen, download `zen.py`. Save it in the same directory as an Zen programs.
+To run Zen, download `zen.exe`. Save it in the same directory as an Zen programs.
 
 ## Execution
 
-To execute Zen on Windows 10, use the command prompt and run the python script `zen.py` with an argument of the program name:
+To execute Zen on Windows 10, use the command prompt and run `zen.exe` with an argument of the program name:
 
 ```
-> python run.py [filename]
+> zen.exe [filename].zl
 ```
 
 The file extension `.zl` is optional.
