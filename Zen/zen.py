@@ -105,7 +105,10 @@ def _get_tokens():
             flag_string = 2
         elif character == '.' and number(current_token + character) is not None:
             current_token += character
-        elif character == '-' and not current_token and not _check_prefix(temporary_delimiter + character):
+        elif character == '-' and not _check_prefix(temporary_delimiter + character):
+            if current_token:
+                tokens.append(current_token)
+                current_token = ''
             if temporary_delimiter:
                 tokens.append(temporary_delimiter)
                 temporary_delimiter = ''
