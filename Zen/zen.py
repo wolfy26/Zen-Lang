@@ -44,15 +44,21 @@ def _check_prefix(token):
 
 def _is_number(token):
     try:
-        float(token)
+        return int(token)
     except ValueError:
-        return None
+        try:
+            return float(token)
+        except ValueError:
+            return None
 
 def _is_variable(token):
     return re.match('^[a-zA-Z_]\\w*$', token)
 
 def _is_string(token):
     return token[0] == token[-1] and (token[0] == "'" or token[0] == '"')
+
+def _is_bool(token):
+    return token == 'true'
 
 def _get_tokens():
     global _raw_input
@@ -100,7 +106,7 @@ def _get_tokens():
                 temporary_delimiter = ''
             current_token = character
             flag_string = 2
-        elif character == '.' and number(current_token + character) is not None:
+        elif character == '.' and _is_number(current_token + character) is not None:
             current_token += character
         elif character == '-' and not current_token and not _check_prefix(temporary_delimiter + character):
             if temporary_delimiter:
@@ -132,17 +138,121 @@ def _get_tokens():
 '''
 Data Types
 '''
+_type_operations = {
+    "_add": {
+        -1: {-1: lambda self, v: _number(self[1] + v[1]),
+             -2: lambda self, v: _string(str(self[1]) + v[1]),
+             -3: lambda self, v: _number(self[1] + (1 if v[1] else 0))},
+        -2: {-1: lambda self, v: _string(self[1] + str(v[1])),
+             -2: lambda self, v: _string(self[1] + v[1]),
+             -3: lambda self, v: _string(self[1] + ('true' if v[1] else 'false'))},
+        -3: {-1: lambda self, v: _number((1 if self[1] else 0) + v[1]),
+             -2: lambda self, v: _number(('true' if self[1] else 'false') + v[1]),
+             -3: lambda self, v: _bool(self[1] or v[1])}
+    },
+    "_sub": {
+        -1: {-1: lambda self, v: _number(self[1] - v[1]),
+             -3: lambda self, v: _number(self[1] - (1 if v[1] else 0))},
+        -2: {},
+        -3: {-1: lambda self, v: _number((1 if self[1] else 0) - v[1]),
+             -3: lambda self, v: _bool(self[1] and not v[1])}
+    },
+    "_mult": {
+        -1: {-1: lambda self, v: _number(self[1] * v[1]),
+             -2: lambda self, v: _string(v[1] * self[1]),
+             -3: lambda self, v: _number(self[1] if v[1] else 0)},
+        -2: {-1: lambda self, v: _string(self[1] * v[1]),
+             -3: lambda self, v: _string(self[1] if v[1] else 0)},
+        -3: {-1: lambda self, v: _number(v[1] if self[1] else 0),
+             -2: lambda self, v: _string(v[1] if self[1] else 0),
+             -3: lambda self, v: _bool(self[1] and v[1])}
+    },
+    "_divn": {
+        -1: {-1: lambda self, v: _number(self[1] / v[1]),
+             -3: lambda self, v: _number(self[1]) if v[1] else 1/0},
+        -2: {-3: lambda self, v: _string(self[1]) if v[1] else 1/0},
+        -3: {-1: lambda self, v: _number((1 / v[1]) if self[1] else 0)}
+    },
+    "_divf": {
+        -1: {-1: lambda self, v: _number(int(self[1] / v[1])),
+             -3: lambda self, v: _number(int(self[1])) if v[1] else 1/0},
+        -2: {-3: lambda self, v: _string(self[1]) if v[1] else 1/0},
+        -3: {-1: lambda self, v: _number(int(1 / v[1]) if self[1] else 0)}
+    },
+    "_mod": {
+        -1: {-1: lambda self, v: _number(self[1] % v[1]),
+             -2: lambda self, v: _string(v[1] % self[1]),
+             -3: lambda self, v: _number(self[1]) if v[1] else 1/0},
+        -2: {-1: lambda self, v: _string(self[1] % v[1]),
+             -2: lambda self, v: _string(self[1] % v[1]),
+             -3: lambda self, v: _string(self[1] % ('true' if v[1] else 'false'))},
+        -3: {-1: lambda self, v: _number(1 % v[1] if self[1] else 0),
+             -2: lambda self, v: _string(v[1] % ('true' if self[1] else 'false')),
+             -3: lambda self, v: _bool(True) if v[1] else False / False}
+    },
+    "_less": {
+        -1: {-1: lambda self, v: _bool(self[1] < v[1]),
+             -3: lambda self, v: _bool(self[1] < (1 if v[1] else 0))},
+        -2: {},
+        -3: {-1: lambda self, v: _bool((1 if self[1] else 0) < v[1]),
+             -3: lambda self, v: _bool(not self[1] and v[1])}
+    },
+    "_leq": {
+        -1: {-1: lambda self, v: _bool(self[1] <= v[1]),
+             -3: lambda self, v: _bool(self[1] <= (1 if v[1] else 0))},
+        -2: {},
+        -3: {-1: lambda self, v: _bool((1 if self[1] else 0) <= v[1]),
+             -3: lambda self, v: _bool(not self[1] or v[1])}
+    },
+    "_greater": {
+        -1: {-1: lambda self, v: _bool(self[1] > v[1]),
+             -3: lambda self, v: _bool(self[1] > (1 if v[1] else 0))},
+        -2: {},
+        -3: {-1: lambda self, v: _bool((1 if self[1] else 0) > v[1]),
+             -3: lambda self, v: _bool(self[1] and not v[1])}
+    },
+    "_geq": {
+        -1: {-1: lambda self, v: _bool(self[1] >= v[1]),
+             -3: lambda self, v: _bool(self[1] >= (1 if v[1] else 0))},
+        -2: {},
+        -3: {-1: lambda self, v: _bool((1 if self[1] else 0) >= v[1]),
+             -3: lambda self, v: _bool(self[1] or not v[1])}
+    },
+    #default return false
+    "_equals": {
+        -1: {-1: lambda self, v: _bool(self[1] == v[1]),
+             -3: lambda self, v: _bool((self[1] != 0) == v[1])},
+        -2: {-2: lambda self, v: _bool(self[1] == v[1])},
+        -3: {-1: lambda self, v: _bool(self[1] == (v[1] != 0))}
+    },
+    #default return true
+    "_neq": {
+        -1: {-1: lambda self, v: _bool(self[1] != v[1]),
+             -3: lambda self, v: _bool((self[1] != 0) != v[1])},
+        -2: {-2: lambda self, v: _bool(self[1] != v[1])},
+        -3: {-1: lambda self, v: _bool(self[1] != (v[1] != 0))}
+    },
+    "_str": {
+        -1: lambda self: str(self[1]),
+        -2: lambda self: self[1],
+        -3: lambda self: 'true' if self[1] else 'false'
+    }
+}
 def _number(value = 0):
-    return {"type": -1, 'value': value}
-_type_lookup = {}
+    return (-1, value)
+def _string(value = ''):
+    return (-2, value)
+def _bool(value = False):
+    return (-3, value)
+_type_lookup = {-1: "number", -2: "string", -3: "bool"}
 '''
 Compiler
 '''
 _operator_lookup = {':=':'03','+':'04','-':'05','*':'06','/':'07','//':'08','**':'09','%':'0a','<':'13','<=':'14','>':'15','>=':'16','=':'17','!=':'18','+:':'19','-:':'1a','*:':'1b','/:':'1c','//:':'1d','**:':'1e','%:':'1f'}
 _tokens = []
 _token_index = 0
-_consts = [0]
-_const_lookup = {0:0}
+_consts = [_number(0), _number(1)]
+_const_lookup = {0:0, 1:1}
 _var_lookup = {}
 _func_data = []
 
@@ -291,13 +401,18 @@ def _eval(scope):
         while _peek() not in _ending:
             token = _next()
             if _is_number(token) is not None:
-                token_value = _is_number(token)
+                token_value = _number(_is_number(token))
                 _add_const(token_value)
                 scope["code"].append('00{:02x}'.format(_const_lookup[token_value]))
             elif _is_string(token):
                 token = token[1:-1]
-                _add_const(token)
-                scope["code"].append('00{:02x}'.format(_const_lookup[token]))
+                token_value = _string(token)
+                _add_const(token_value)
+                scope["code"].append('00{:02x}'.format(_const_lookup[token_value]))
+            elif _is_bool(token):
+                token_value = _bool(token == 'true')
+                _add_const(token_value)
+                scope["code"].append('00{:02x}'.format(_const_lookup[token_value]))
             elif _is_variable(token):
                 scope_defined = _peek() == '{'
                 if scope_defined:
@@ -374,7 +489,7 @@ def _exec(scope):
         elif command == '01':
             temp_scope = scope
             if arguments[1]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
@@ -387,7 +502,7 @@ def _exec(scope):
             temp_scope = scope
             new_value = evaluation_stack.pop()
             if arguments[1]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
@@ -397,7 +512,7 @@ def _exec(scope):
             temp_scope = scope
             new_value = evaluation_stack.pop()
             if arguments[1]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
@@ -410,35 +525,35 @@ def _exec(scope):
         elif command == '04':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
-            evaluation_stack.append(a + b)
+            evaluation_stack.append(_type_operations["_add"][a[0]][b[0]](a, b))
         elif command == '05':
             b = evaluation_stack.pop()
-            a = evaluation_stack.pop() if evaluation_stack else 0
-            evaluation_stack.append(a - b)
+            a = evaluation_stack.pop()
+            evaluation_stack.append(_type_operations["_sub"][a[0]][b[0]](a, b))
         elif command == '06':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
-            evaluation_stack.append(a * b)
+            evaluation_stack.append(_type_operations["_mult"][a[0]][b[0]](a, b))
         elif command == '07':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
-            evaluation_stack.append(a / b)
+            evaluation_stack.append(_type_operations["_divn"][a[0]][b[0]](a, b))
         elif command == '08':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
-            evaluation_stack.append(int(a / b))
+            evaluation_stack.append(_type_operations["_divf"][a[0]][b[0]](a, b))
         elif command == '09':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
-            evaluation_stack.append(a ** b)
+            evaluation_stack.append(_type_operations["_pow"][a[0]][b[0]](a, b))
         elif command == '0a':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
-            evaluation_stack.append(a % b)
+            evaluation_stack.append(_type_operations["_mod"][a[0]][b[0]](a, b))
         elif command == '0b':
             temp_scope = scope
             if arguments[1]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
@@ -448,7 +563,7 @@ def _exec(scope):
             arg_values = [evaluation_stack.pop() for arg_count in range(arguments[1])]
             temp_scope = scope
             if arguments[2]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
@@ -465,25 +580,25 @@ def _exec(scope):
             for argument_count in range(arguments[0]):
                 print_arguments.append(evaluation_stack.pop())
             for argument in range(arguments[0]-1, 0, -1):
-                print(print_arguments[argument], end = ' ')
+                print(_type_operations["_str"][print_arguments[argument][0]](print_arguments[argument]), end = ' ')
             if print_arguments:
-                print(print_arguments[0], end = '')
+                print(_type_operations["_str"][print_arguments[0][0]](print_arguments[0]), end = '')
         elif command == '0e':
             print_arguments = []
             for argument_count in range(arguments[0]):
                 print_arguments.append(evaluation_stack.pop())
             for argument in range(arguments[0]-1, 0, -1):
-                print(print_arguments[argument], end = ' ')
+                print(_type_operations["_str"][print_arguments[argument][0]](print_arguments[argument]), end = ' ')
             if print_arguments:
-                print(print_arguments[0], end = '')
+                print(_type_operations["_str"][print_arguments[0][0]](print_arguments[0]), end = '')
             print()
         elif command == '0f':
             return evaluation_stack.pop()
         elif command == '10':
-            if not evaluation_stack.pop():
+            if not evaluation_stack.pop()[1]:
                 byte_index = scope["goto"][arguments[0]] * 2
         elif command == '11':
-            if evaluation_stack.pop():
+            if evaluation_stack.pop()[1]:
                 byte_index = scope["goto"][arguments[0]] * 2
         elif command == '12':
             byte_index = scope["goto"][arguments[0]] * 2
@@ -491,31 +606,37 @@ def _exec(scope):
         elif command == '13':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
-            evaluation_stack.append(a < b)
+            evaluation_stack.append(_type_operations["_less"][a[0]][b[0]](a, b))
         elif command == '14':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
-            evaluation_stack.append(a <= b)
+            evaluation_stack.append(_type_operations["_leq"][a[0]][b[0]](a, b))
         elif command == '15':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
-            evaluation_stack.append(a > b)
+            evaluation_stack.append(_type_operations["_greater"][a[0]][b[0]](a, b))
         elif command == '16':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
-            evaluation_stack.append(a >= b)
+            evaluation_stack.append(_type_operations["_geq"][a[0]][b[0]](a, b))
         elif command == '17':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
-            evaluation_stack.append(a == b)
+            if a[0] in _type_operations["_equals"] and b[0] in _type_operations["_equals"][a[0]]:
+                evaluation_stack.append(_type_operations["_equals"][a[0]][b[0]](a, b))
+            else:
+                evaluation_stack.append(_bool(False))
         elif command == '18':
             b = evaluation_stack.pop()
             a = evaluation_stack.pop()
-            evaluation_stack.append(a != b)
+            if a[0] in _type_operations["_neq"] and b[0] in _type_operations["_neq"][a[0]]:
+                evaluation_stack.append(_type_operations["_neq"][a[0]][b[0]](a, b))
+            else:
+                evaluation_stack.append(_bool(True))
         elif command == '19':
             temp_scope = scope
             if arguments[1]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
@@ -523,12 +644,14 @@ def _exec(scope):
                 temp_scope = temp_scope["parent"]
             if arguments[0] not in temp_scope["values"]:
                 raise NameError
-            temp_scope["values"][arguments[0]] += evaluation_stack.pop()
+            b = evaluation_stack.pop()
+            a = temp_scope["values"][arguments[0]]
+            temp_scope["values"][arguments[0]] = _type_operations["_add"][a[0]][b[0]](a, b)
             evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '1a':
             temp_scope = scope
             if arguments[1]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
@@ -536,12 +659,14 @@ def _exec(scope):
                 temp_scope = temp_scope["parent"]
             if arguments[0] not in temp_scope["values"]:
                 raise NameError
-            temp_scope["values"][arguments[0]] -= evaluation_stack.pop()
+            b = evaluation_stack.pop()
+            a = temp_scope["values"][arguments[0]]
+            temp_scope["values"][arguments[0]] = _type_operations["_sub"][a[0]][b[0]](a, b)
             evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '1b':
             temp_scope = scope
             if arguments[1]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
@@ -549,12 +674,14 @@ def _exec(scope):
                 temp_scope = temp_scope["parent"]
             if arguments[0] not in temp_scope["values"]:
                 raise NameError
-            temp_scope["values"][arguments[0]] *= evaluation_stack.pop()
+            b = evaluation_stack.pop()
+            a = temp_scope["values"][arguments[0]]
+            temp_scope["values"][arguments[0]] = _type_operations["_mult"][a[0]][b[0]](a, b)
             evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '1c':
             temp_scope = scope
             if arguments[1]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
@@ -562,12 +689,14 @@ def _exec(scope):
                 temp_scope = temp_scope["parent"]
             if arguments[0] not in temp_scope["values"]:
                 raise NameError
-            temp_scope["values"][arguments[0]] /= evaluation_stack.pop()
+            b = evaluation_stack.pop()
+            a = temp_scope["values"][arguments[0]]
+            temp_scope["values"][arguments[0]] = _type_operations["_divn"][a[0]][b[0]](a, b)
             evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '1d':
             temp_scope = scope
             if arguments[1]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
@@ -575,12 +704,14 @@ def _exec(scope):
                 temp_scope = temp_scope["parent"]
             if arguments[0] not in temp_scope["values"]:
                 raise NameError
-            temp_scope["values"][arguments[0]] //= evaluation_stack.pop()
+            b = evaluation_stack.pop()
+            a = temp_scope["values"][arguments[0]]
+            temp_scope["values"][arguments[0]] = _type_operations["_divf"][a[0]][b[0]](a, b)
             evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '1e':
             temp_scope = scope
             if arguments[1]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
@@ -588,12 +719,14 @@ def _exec(scope):
                 temp_scope = temp_scope["parent"]
             if arguments[0] not in temp_scope["values"]:
                 raise NameError
-            temp_scope["values"][arguments[0]] **= evaluation_stack.pop()
+            b = evaluation_stack.pop()
+            a = temp_scope["values"][arguments[0]]
+            temp_scope["values"][arguments[0]] = _type_operations["_pow"][a[0]][b[0]](a, b)
             evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '1f':
             temp_scope = scope
             if arguments[1]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
@@ -601,7 +734,9 @@ def _exec(scope):
                 temp_scope = temp_scope["parent"]
             if arguments[0] not in temp_scope["values"]:
                 raise NameError
-            temp_scope["values"][arguments[0]] //= evaluation_stack.pop()
+            b = evaluation_stack.pop()
+            a = temp_scope["values"][arguments[0]]
+            temp_scope["values"][arguments[0]] = _type_operations["_mod"][a[0]][b[0]](a, b)
             evaluation_stack.append(temp_scope["values"][arguments[0]])
         elif command == '20':
             scope = scope["scopes"][arguments[0]]
@@ -610,7 +745,7 @@ def _exec(scope):
         elif command == '22':
             temp_scope = scope
             if arguments[2]:
-                for scope_count in range(evaluation_stack.pop()):
+                for scope_count in range(evaluation_stack.pop()[1]):
                     if not temp_scope["parent"]:
                         break
                     temp_scope = temp_scope["parent"]
