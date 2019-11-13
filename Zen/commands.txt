@@ -11,8 +11,8 @@
 0a -> mod                                                 -> (second-to-top value on stack) mod (top value on stack)
 0b -> make_name    [name_index] [scoping]                 -> create variable with no value
 0c -> call_func    [func_index] [num_args] [scoping]      -> call function, pop arguments off stack
-0d -> print        [num_args]                             -> special print function, pop arguments off stack (discards top element)
-0e -> println      [num_args]                             -> same as print, except prints with new line (discards top element)
+0d -> print        [num_args]                             -> special print function, pop arguments off stack
+0e -> println      [num_args]                             -> same as print, except prints with new line
 0f -> return                                              -> return top value on stack
 10 -> jump_false   [index]                                -> if top value on stack is false, jump to index
 11 -> jump_true    [index]                                -> if top value on stack is true, jump to index
