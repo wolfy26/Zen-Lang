@@ -1,6 +1,5 @@
 import grammar
 import tokens
-import re
 
 def _read_file(filename):
     try:
@@ -18,17 +17,10 @@ def _read_file(filename):
         print("File unable to be accessed.")
 
 def _match_prefix(prefix, searches):
-    matches = []
-    for search in searches:
-        if search.startswith(prefix):
-            matches.append(prefix)
-    return matches
+    return [search for search in searches if search.startswith(prefix)]
 
 def _find_delims(delim_prefix):
-    potential_delims = []
-    for delims in (grammar.OPEN_DELIM, grammar.END_DELIM, grammar.MISC_DELIM, grammar.BINARY_OPS, grammar.UNARY_OPS, grammar.ASSING_OPS):
-        potential_delims += _match_prefix(delim_prefix, delims)
-    return potential_delims
+    return sum((_match_prefix(delim_prefix, group) for group in grammar.DELIMS), [])
 
 def tokenize(filename):
     current_token = ''
@@ -36,7 +28,7 @@ def tokenize(filename):
     string_flag = 0
     escape_flag = False
     for char in _read_file(filename):
-        if not escape_flag and char = '\\':
+        if not escape_flag and char == '\\':
             escape_flag = True
             continue
         if string_flag == 1:

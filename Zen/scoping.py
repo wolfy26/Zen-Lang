@@ -1,8 +1,6 @@
 def copy_scope(scope):
-    new_scope = {i: scope[i].copy() if hasattr(scope[i], 'copy') else scope[i] for i in scope}
-    for child in new_scope["scopes"]:
-        child = copy_scope(child)
-        child["parent"] = new_scope
+    new_scope = scope
+    new_scope["values"] = scope["values"].copy()
     return new_scope
 
 def create_scope(parent = None, insert_code = False):

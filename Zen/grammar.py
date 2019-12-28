@@ -57,6 +57,8 @@ BINARY_OPS = ('%', '^', '&', '|', '*', '/', '-', '+', '<', '>', '^^', '&&', '||'
 UNARY_OPS  = ('!', '~', '++', '--')
 ASSIGN_OPS = (':=', '%:', '^:', '&:', '*:', '/:', '-:', '+:', '|:', '**:', '//:')
 
+DELIMS = (OPEN_DELIM, END_DELIM, MISC_DELIM, BINARY_OPS, UNARY_OPS, ASSIGN_OPS)
+
 OP_ORDER   = (('++', '--'),
               ('!', '~'),
               ('**'),
