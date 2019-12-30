@@ -4,8 +4,8 @@ import error
 
 def _read_file(filename):
     try:
-        if not filename.endswith('.zl'):
-            filename += '.zl'
+        if not filename.endswith('.zen'):
+            filename += '.zen'
         with open(filename, "r") as file:
             while True:
                 nextChar = file.read(1)

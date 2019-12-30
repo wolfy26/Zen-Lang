@@ -12,16 +12,16 @@ To run Zen, download `zen.exe`.
 
 To execute Zen on Windows 10, download Zen-Lang and add it to the PATH. Use the command prompt to run a Zen file:
 ```
-> zen [filename].zl
+> zen [filename].zen
 ```
 
 Optionally, download only `zen.exe`, save it in the same directory as any Zen files, and execute it:
 
 ```
-> zen.exe [filename].zl
+> zen.exe [filename].zen
 ```
 
-The file extension `.zl` is optional.
+The file extension `.zen` is optional.
 
 The following flags are available for debugging:
 
