@@ -34,7 +34,7 @@ OPCODES    = ('PUSH_CONST', # 00
               'S_MOD'     , # 1f
               'GO_SCOPE'  , # 20
               'GO_PARENT' , # 21
-              'DEF_FUNC'  , # 22
+              'PUSH_FUNC' , # 22
               'BIT_NOT'   , # 23
               'BIT_AND'   , # 24
               'BIT_XOR'   , # 25
@@ -74,7 +74,8 @@ OP_ORDER   = (('++', '--'),
               ('||'),
               ASSIGN_OPS)
 
-OP_LOOKUP  = {'+'  : 0x05,
+OP_LOOKUP  = {':=' : 0x03,
+              '+'  : 0x05,
               '-'  : 0x06,
               '*'  : 0x07,
               '/'  : 0x08,
@@ -102,8 +103,8 @@ OP_LOOKUP  = {'+'  : 0x05,
               '&&' : 0x28,
               '^^' : 0x29,
               '||' : 0x2a,
-              '&: ': 0x2b,
-              '^: ': 0x2c,
-              '|: ': 0x2d,
+              '&:' : 0x2b,
+              '^:' : 0x2c,
+              '|:' : 0x2d,
               '++' : 0x2e,
               '--' : 0x2f}

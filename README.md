@@ -2,7 +2,7 @@
 
 ## Version
 
-Zen is currently on Version 0.2
+Zen is currently on Version 0.3
 
 ## Installation
 
@@ -25,7 +25,7 @@ The file extension `.zl` is optional.
 
 The following flags are available for debugging:
 
-Flag|Mode
+Flag|Usage
 -|-
 `-r`|Display source code of Zen file
 `-b`|Display global bytecode of Zen file
@@ -42,7 +42,7 @@ String literals are enclosed in either single or double quotes, but not a mixtur
 
 ## Language
 
-Statements can span multiple lines, and multiple statements can be in the same line. Statements always end in `;`.
+Statements can span multiple lines, and multiple statements can be in the same line. Statements always end in `;`. Whitespace delimits only variables and keywords, so `: =` is equivalent to `:=` but `foo bar` is not equivalent to `foobar`.
 
 #### Variables
 Variables are declared with the keyword `def`, and may or may not be assigned a value with `:=`. To reassign the value of a variable, use only `:=`. An assignment returns the value assigned.
@@ -65,7 +65,7 @@ Exponentiation|`**`
 Floor division|`//`
 Modulo|`%`
 
-The logical operators (which return either `True` or `False`) supported are:
+The logical operators (which return either `true` or `false`) supported are:
 
 |Operator|Symbol|
 -|:-:
@@ -76,49 +76,50 @@ Greater than|`>`
 Less than or equal to|`<=`
 Greater than or equal to|`>=`
 
-The operators `+:`, `-:`, `*:`, etc. are used as such:
+Assignment operators `+:`, `-:`, `*:`, etc. are used as such:
 ```
 x +: 1;
 x := x + 1;
 ```
-The two statements above are identical, and both statements return `x+1`.
+The two statements above are identical, and both statements increment `x` by 1.
 
 #### Functions
-To define a function, use a pair of parentheses capturing the arguments, followed by a code block in curly braces. A function may include one or several return statements, to which the function is evaluated when called. If no return statement is provided, the function evaluates to `0`:
+To define a function, use the keyword `func` followed by a pair of parentheses capturing the arguments, followed by a code block in curly braces. A function may include zero, one or several return statements, to which the function is evaluated when called. If no return statement is provided, the function evaluates to `0`:
 ```
-def hello(){
+def hello := func(){
   println("Hello world!");
-}
-def sum(n1, n2, n3){
+};
+def sum := func(n1, n2, n3){
   return n1 + n2 + n3;
-}
+};
 ```
+Note that functions are objects; to assign a function to a variable, use `def` as you normally would. Since the entire assignment is a statement, it ends in a semicolon.
+
 To call a function, use the function name followed by a series of expressions separated by commas in parentheses.
 
 Functions can access variables in the global scope; however, variables declared in functions may not be accessed from outside the function. If the function and global scope contain variables of the same name, the function variable will be used, and the global variable will remain untouched (see **Scoping**):
 
 ```
 def x := 0;
-def foo(){
+def foo := func(){
   def x := 1;
-  print(x);
-}
+  print(x, '');
+};
 foo();
 print(x);
 ```
-outputs `10`.
+outputs `1 0`.
 
-#### Conditionals and loops
-Conditional statements use the keyword `if`, followed by an expression in parentheses and a code block in curly braces. If the expression evaluates to true, the code block will be executed.
+#### Conditionals and Loops
+Conditional statements use the keyword `if`, followed by an expression in parentheses and either a single statement or a code block in curly braces. If the expression evaluates to true, the code block will be executed.
 
-Conditional statements may have an optional `else` keyword following the code block, which is immediately followed by another `if` or a code block in curly braces. If the first conditional statement fails, the conditional or code block following the `else` is executed.
+Conditional statements may have an optional `else` keyword following the code block, which is immediately followed by another `if` or a single statement or a code block in curly braces. If the first conditional statement fails, the conditional or code block following the `else` is executed.
 
-Two loops are supported: one uses the keyword `while`, and the second uses `until`. Both loops are followed by an expression in parentheses and a code block in curly braces. A while loop executes the code block so long as the expression is true; an until loop executes the code block so long as the expression is false:
+Two loops are supported: one uses the keyword `while`, and the second uses `until`. Both loops are followed by an expression in parentheses and a single statement or a code block in curly braces. A while loop executes the code block so long as the expression is true; an until loop executes the code block so long as the expression is false:
 ```
 def x := 1;
-if(x = 1){
-  println(x, 'is 1');
-}else{
+if(x = 1) println(x, 'is 1');
+else{
   println(x, 'is not 1');
 }
 while(x < 10){
@@ -137,21 +138,23 @@ Two built-in functions, `print` and `println`, are provided. Both accept any num
 
 The ability to control scoping is a powerful tool unique to Zen.
 
-Statements outside any functions, conditionals, or loops are in the **global** scope. Any statements inside the code blocks of functions, conditionals, or loops are one scope within the function, conditional, or loop.
+Statements outside any functions, conditionals, or loops are in the **global** scope. Any statements inside code blocks are in the scope of that code block.
 
-By default, variables and functions are limited to the scope in which they were defined.
+By default, variables and functions are limited to the scope in which they are defined.
 
-Variables are fetched from the first scope outside (or in) the scope specified which has that variable defined.
+Variables are fetched from the first scope from the scope specified which has that variable defined.
 
-To specify the scope of a variable or function, use curly braces surrounding an expression immediately following the variable or function name. The expression specifies the number of scopes outside the current scope in which the variable is used. A scope may not exceed the global scope.
+To specify the scope of a variable or function, use curly braces surrounding an expression immediately following the variable or function name. The expression specifies the number of scopes outside the current scope in which the variable is used. Although the expression may evaluate to an extremely high number, the scope will not exceed the global scope.
 
 Consider the following program:
 ```
 def n := 1;
+def x := 5;
 if(1 = 1){
   def n := 2;
   println(n);
   println(n{1});
+  println(x);
   n{1000} := 3;
 }
 println(n);
@@ -159,6 +162,9 @@ println(n);
 ```
 2
 1
+5
 3
 ```
-The expression `n{1}` gets the variable `n` one scope outside the conditional. Also, `n{1000}` would far exceed the global scope, but is limited to the global scope without any errors.
+The expression `n{1}` gets the variable `n` one scope outside the conditional (i.e., the global scope).
+
+Although `x` has not been defined inside the conditional, it exists in the global scope.

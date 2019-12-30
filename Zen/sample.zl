@@ -1,9 +1,9 @@
-def fib(n){
+def fib := func(n){
   def p1{1} := def p2{10} := 1;
   until((n -: 1) <= 1){
     p1 +: p2;
     p2 := p1-p2;
   }
   return p1;
-}
+};
 println(fib(120));

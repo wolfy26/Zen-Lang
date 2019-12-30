@@ -1,5 +1,6 @@
 import grammar
 import tokens
+import error
 
 def _read_file(filename):
     try:
@@ -14,7 +15,7 @@ def _read_file(filename):
                     return
     except FileNotFoundError:
         # handle FileNotFound exception
-        print("File unable to be accessed.")
+        error.throw("Cannot find or open specified file")
 
 def _match_prefix(prefix, searches):
     return [search for search in searches if search.startswith(prefix)]
