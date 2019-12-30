@@ -98,3 +98,12 @@ _type_operations = {
         -3: lambda self: 'true' if self[1] else 'false'
     }
 }
+
+def number(value = 0):
+    return (-1, value)
+
+def string(value = ''):
+    return (-2, value)
+
+def bool(value = 0):
+    return (-3, value)
